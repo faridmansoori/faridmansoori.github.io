@@ -1,61 +1,51 @@
 <?php
 
-  require_once '../assets/phpmailer/PHPMailerAutoload.php';
+    // Only process POST reqeusts.
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        // Get the form fields and remove whitespace.
+        $name = strip_tags(trim($_POST["name"]));
+        $name = str_replace(array("\r","\n"),array(" "," "),$name);
+        $email = filter_var(trim($_POST["email"]), FILTER_SANITIZE_EMAIL);
+        $message = trim($_POST["message"]);
 
-    if (isset($_POST['name'], $_POST['email'], $_POST['phone'], $_POST['message'])) {
+        // Check that data was sent to the mailer.
+        if ( empty($name) OR empty($message) OR !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            // Set a 400 (bad request) response code and exit.
+            http_response_code(400);
+            echo "Oops! There was a problem with your submission. Please complete the form and try again.";
+            exit;
+        }
 
-   $fields = [
+        // Set the recipient email address.
+        // FIXME: Update this to your desired email address.
+        $recipient = "faridmansoori91@gmail.com";
 
-    'name' => $_POST['name'],
-    'email' => $_POST['email'],
-    'phone' => $_POST['phone'],
-    'message' => $_POST['message']
+        // Set the email subject.
+        $subject = "New contact from $name";
 
+        // Build the email content.
+        $email_content = "Name: $name\n";
+        $email_content .= "Email: $email\n\n";
+        $email_content .= "Message:\n$message\n";
 
-];
+        // Build the email headers.
+        $email_headers = "From: $name <$email>";
 
-foreach ($fields as $field => $data) {
+        // Send the email.
+        if (mail($recipient, $subject, $email_content, $email_headers)) {
+            // Set a 200 (okay) response code.
+            http_response_code(200);
+            echo "Thank You! Your message has been sent.";
+        } else {
+            // Set a 500 (internal server error) response code.
+            http_response_code(500);
+            echo "Oops! Something went wrong and we couldn't send your message.";
+        }
 
-}
-
-
-$m = new PHPMailer;
-
-$m->isSMTP();
-$m->SMTPAuth = true;
-$m->SMTPDebug = false;
-$m->do_debug = 0;
-$m->Host = 'smtp.gmail.com';
-$m->Username = 'faridmansoori91@gmail.com';
-$m->Password = 'adickshun786';
-$m->SMTPSecure = 'ssl';
-$m->Port = 465;
-
-$m->isHTML();
-
-$m->Subject = 'Contact Form submitted';
-
-
-
-  $m->Body = 'From:' . $fields['name'] . '(' . $fields['email'] . ')'  . '<p><b>phone:</b><br/>' . $fields['phone'] . '</p>' . '<p><b>Message</b><br/>' . $fields['message'] . '</p>';
-
-
-   $m->FromName = 'Contact';
-
-
-
-
-
-    $m->AddAddress('rjsnh1522@gmail.com', 'Pawan');
-
-     if ($m->send()) {
-
-
-        echo 'Thank You '.$_POST["name"].' We Will Contact You Soon franchise form';
-       die();
     } else {
-        echo 'try again later';
+        // Not a POST request, set a 403 (forbidden) response code.
+        http_response_code(403);
+        echo "There was a problem with your submission, please try again.";
     }
 
-
- }
+?>
